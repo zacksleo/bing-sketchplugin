@@ -12,3 +12,6 @@ npm-debug.log
 
 # WebStorm
 .idea
+
+package-lock.json
+*.sketchplugin
