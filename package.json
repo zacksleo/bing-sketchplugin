@@ -1,12 +1,12 @@
 {
-  "name": "unsplash",
+  "name": "bing",
   "version": "1.0.2",
   "engines": {
     "sketch": ">=3.0"
   },
   "skpm": {
     "manifest": "src/manifest.json",
-    "main": "unsplash.sketchplugin",
+    "main": "bing.sketchplugin",
     "assets": [
       "assets/**/*"
     ]
@@ -26,9 +26,9 @@
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0"
   },
-  "author": "Sketch",
-  "repository": "https://github.com/BohemianCoding/unsplash-sketchplugin.git",
-  "description": "Easily grab images from Unsplash",
+  "author": "zacksleo",
+  "repository": "https://github.com/zacksleo/bing-sketchplugin.git",
+  "description": "Easily grab images from Bing",
   "license": "MIT",
   "dependencies": {
     "@skpm/fs": "^0.2.0"

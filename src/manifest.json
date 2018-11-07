@@ -1,12 +1,12 @@
 {
-  "name": "Unsplash",
+  "name": "Bing",
   "compatibleVersion": 3,
   "bundleVersion": 1,
   "icon": "icon.png",
   "suppliesData" : true,
   "commands": [
     {
-      "name": "View Photo on Unsplash",
+      "name": "View Photo on Bing",
       "identifier": "imageDetails",
       "script": "DataProvider.js",
       "handler": {
@@ -26,7 +26,7 @@
     }
   ],
   "menu": {
-    "title": "Unsplash",
+    "title": "必应壁纸",
     "items": [
         "imageDetails"
     ]

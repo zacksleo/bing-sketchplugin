@@ -4,27 +4,20 @@ const util = require('util')
 const fs = require('@skpm/fs')
 const sketch = require('sketch')
 
-const API_KEY = 'bfd993ac8c14516588069b3fc664b216d0e20fb9b9fa35aa06fcc3ba6e0bc703'
-const API_ENDPOINT = 'https://api.unsplash.com'
-const action = '/photos/random'
-const collectionId = 317099 // Unsplash's curated collection
-const apiOptions = {
-  'headers': {
-    'app-pragma': 'no-cache'
-  }
-}
+const API_ENDPOINT = 'https://www.bing.com'
+const action = '/HPImageArchive.aspx'
 
 const { DataSupplier, UI, Settings } = sketch
 
-const SETTING_KEY = 'unsplash.photo.id'
-const FOLDER = path.join(os.tmpdir(), 'com.sketchapp.unsplash-plugin')
+const SETTING_KEY = 'bing.photo.id'
+const FOLDER = path.join(os.tmpdir(), 'com.sketchapp.bing-plugin')
 
-export function onStartup () {
-  DataSupplier.registerDataSupplier('public.image', 'Random Photo', 'SupplyRandomPhoto')
-  DataSupplier.registerDataSupplier('public.image', 'Search Photo…', 'SearchPhoto')
+export function onStartup() {
+  DataSupplier.registerDataSupplier('public.image', '随机图片', 'SupplyRandomPhoto')
+  DataSupplier.registerDataSupplier('public.image', '搜索图片', 'SearchPhoto')
 }
 
-export function onShutdown () {
+export function onShutdown() {
   DataSupplier.deregisterDataSuppliers()
   try {
     fs.rmdirSync(FOLDER)
@@ -33,13 +26,13 @@ export function onShutdown () {
   }
 }
 
-export function onSupplyRandomPhoto (context) {
+export function onSupplyRandomPhoto(context) {
   let dataKey = context.data.key
   const items = util.toArray(context.data.items).map(sketch.fromNative)
   items.forEach((item, index) => setImageFor(item, index, dataKey))
 }
 
-export function onSearchPhoto (context) {
+export function onSearchPhoto(context) {
   let dataKey = context.data.key
   let searchTerm = UI.getStringFromUser('Search Unsplash for…', 'People').replace(' ', '-').toLowerCase()
   if (searchTerm != 'null') {
@@ -48,7 +41,7 @@ export function onSearchPhoto (context) {
   }
 }
 
-export default function onImageDetails () {
+export default function onImageDetails() {
   var selection = sketch.getSelectedDocument().selectedLayers
   if (selection.length > 0) {
     selection.forEach(element => {
@@ -71,7 +64,7 @@ export default function onImageDetails () {
   }
 }
 
-function setImageFor (item, index, dataKey, searchTerm) {
+function setImageFor(item, index, dataKey, searchTerm) {
   let layer
   if (!item.type) {
     // if we get an unknown item, it means that we have a layer that is not yet
@@ -85,44 +78,38 @@ function setImageFor (item, index, dataKey, searchTerm) {
     layer = item
   }
 
-  let orientation
-  if (layer.frame.width > layer.frame.height) {
-    orientation = 'landscape'
-  }
-  if (layer.frame.width < layer.frame.height) {
-    orientation = 'portrait'
-  }
-  if (layer.frame.width === layer.frame.height) {
-    orientation = 'squarish'
+  let width = layer.frame.width
+  let height = layer.frame.height
+  let resolution = '1920x1200'
+  let resolutions = ['240x320', '320x240', '400x240', '480x800', '640x480', '720x1280', '768x1280', '800x480', '800x600', '1024x768', '1280x768', '1366x768', '1920x1080', '1920x1200']
+
+  // get the proper sulution
+  for (let i = 0; i < resolutions.length - 1; i++) {
+    let arr = resolutions[i].split('x')
+    if (width <= arr[0] && height <= arr[1]) {
+      resolution = resolutions[i]
+      break
+    }
   }
 
-  let url = API_ENDPOINT + action + '?client_id=' + API_KEY + '&count=1&orientation=' + orientation
-  if (searchTerm) {
-    url += '&query=' + searchTerm
-  } else {
-    url += '&collections=' + collectionId
-  }
-
-  UI.message('🕑 Downloading…')
-  fetch(url, apiOptions)
+  let max = 9
+  let min = 1
+  let idx = Math.floor(Math.random() * (+max - +min)) + +min
+  let url = API_ENDPOINT + action + '?format=js&n=1&mkt=en-US&idx=' + idx
+  UI.message('🕑 正在下载…')
+  fetch(url)
     .then(response => response.json())
-    .then(json => {
-      if (json.errors) {
-        return Promise.reject(json.errors[0])
-      } else {
-        return json[0]
-      }
-    })
-    .then(json => process(json, dataKey, index, item))
+    .then(json => process(json, dataKey, index, item, resolution))
     .catch(e => {
-      UI.message('There was an error connecting to Unsplash')
+      UI.message('图片下载失败')
       console.error(e)
     })
 }
 
-function process (data, dataKey, index, item) {
+function process(data, dataKey, index, item, resolution) {
   // supply the data
-  return getImageFromURL(data.urls.regular).then(imagePath => {
+  let url = API_ENDPOINT + '/' + data.images[0].urlbase + '_' + resolution + '.jpg'
+  return getImageFromURL(url).then(imagePath => {
     if (!imagePath) {
       // TODO: something wrong happened, show something to the user
       return
@@ -133,15 +120,12 @@ function process (data, dataKey, index, item) {
     if (item.type != 'DataOverride') {
       Settings.setLayerSettingForKey(item, SETTING_KEY, data.id)
     }
-
-    // show the name of the photographer
-    let downloadLocation = data.links.download_location + '?client_id=' + API_KEY
-    return fetch(downloadLocation, apiOptions)
-      .then(UI.message('📷 by ' + data.user.name + ' on Unsplash'))
+    // show the title
+    UI.message(data.images[0].title)
   })
 }
 
-function getImageFromURL (url) {
+function getImageFromURL(url) {
   return fetch(url)
     .then(res => res.blob())
     // TODO: use imageData directly, once #19391 is implemented
@@ -152,7 +136,7 @@ function getImageFromURL (url) {
     })
 }
 
-function saveTempFileFromImageData (imageData) {
+function saveTempFileFromImageData(imageData) {
   const guid = NSProcessInfo.processInfo().globallyUniqueString()
   const imagePath = path.join(FOLDER, `${guid}.jpg`)
   try {
